@@ -29,7 +29,7 @@ class DBConfig:
         self.hostname: str = config[self.HOSTNAME]
         self.username: str = config[self.USERNAME]
         self.password: str = config[self.PASSWORD]
-        self.default_db: str = config[self.default_db]
+        self.default_db: str = config[self.DEFAULT_DB]
         self.port: int = config[self.PORT]
 
 
@@ -47,8 +47,8 @@ class ConfigParser:
     This class parses the input config file and provides methods to lookup config entries
     """
 
-    TABLE_CONFIG = 'TABLE_CONFIG'
-    APP_CONFIG = 'APP_CONFIG'
+    TABLE_CONFIG = 'table-config'
+    APP_CONFIG = 'app-config'
 
     def __init__(self, conf_file: str):
         self._config: dict = self._parse_file(conf_file)

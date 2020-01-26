@@ -2,7 +2,7 @@ from typing import List
 
 import psycopg2
 
-from .config import DBConfig, TableConfig
+from config import DBConfig, TableConfig
 
 
 class CursorWrapper:
@@ -39,7 +39,7 @@ class DBManager:
         )
 
     def sql_field_names(self, sql: str) -> List[str]:
-        query: str = "SELECT * FROM (sql) t0 WHERE 1 = 0"
+        query: str = "SELECT * FROM (%s) t0 WHERE 1 = 0" % sql
         cursor = self._conn.cursor()
         cursor.execute(query)
         return [x.name for x in cursor.description]
@@ -72,9 +72,9 @@ class QueryBuilder:
             """
             SELECT {cols} 
             FROM 
-            {src_table} {src_a} 
+            ({src_table}) {src_a} 
             FULL OUTER JOIN 
-            {tgt_table} {tgt_a} 
+            ({tgt_table}) {tgt_a} 
             ON {join_cond} 
             WHERE NOT ({where_condition})
             """.format(cols=self._projection(src_a, tgt_a), src_table=self.table_config.src_relation, src_a=src_a,
@@ -85,12 +85,12 @@ class QueryBuilder:
     def _join_condition(self, src_a, tgt_a) -> str:
         data = ['{src_a}.{col} = {tgt_a}.{col}'.format(src_a=src_a, tgt_a=tgt_a, col=x)
                 for x in self.table_config.join_cols]
-        return ' AND\n'.join(data)
+        return ' AND '.join(data)
 
     def _where_condition(self, src_a, tgt_a) -> str:
         cols = [y for y in self.columns if y not in self.table_config.join_cols]
         data = ["{src_a}.{col} = {tgt_a}.{col}".format(src_a=src_a, tgt_a=tgt_a, col=x) for x in cols]
-        return ' AND\n'.join(data)
+        return ' AND '.join(data)
 
     def _projection(self, src_a, tgt_a) -> str:
         data = ['{als}.{col}'.format(als=y, col=x) for x in self.columns for y in [src_a, tgt_a]]

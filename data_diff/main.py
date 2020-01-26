@@ -11,7 +11,8 @@ Usage:
 """
 
 from docopt import docopt
+from app import App
 
 if __name__ == '__main__':
     args = docopt(__doc__)
-    print(args)
+    App(args).run()

@@ -1,10 +1,9 @@
 from typing import List
 
 import jinja2
-
-from .config import ConfigParser, AppConfig, TableConfig
-from .db import DBManager, QueryBuilder
-
+from config import ConfigParser, AppConfig, TableConfig
+from db import DBManager, QueryBuilder
+from os import path
 
 class RowData:
 
@@ -23,7 +22,7 @@ class Report:
         self.row_data = row_data
 
     def _load_template(self):
-        template_loader = jinja2.FileSystemLoader(searchpath="./resources")
+        template_loader = jinja2.FileSystemLoader(searchpath=path.dirname(__file__))
         template_env = jinja2.Environment(loader=template_loader)
         return template_env.get_template(self.TEMPLATE_FILE)
 

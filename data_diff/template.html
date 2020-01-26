@@ -48,15 +48,15 @@
 <table id="myTable">
     <tr class="header">
         {% for name in header -%}
-           <th style="width:60%;">{{name}}</th>
+        <th style="width:60%;">{{name}}</th>
         {% endfor %}
     </tr>
     {% for row in data -%}
-        <tr>
-            {% for cell in row -%}
-                <td>{{cell}}</td>
-            {% endfor %}
-        </tr>
+    <tr>
+        {% for cell in row -%}
+        <td>{{cell}}</td>
+        {% endfor %}
+    </tr>
     {% endfor %}
 </table>
 
