@@ -43,3 +43,10 @@
    In the above config file you define two SQLs the source sql and target sql. the source sql and target sql must have the
    same number of column with same labels. Then you should define the key fields which will be used to join these two
    relations.
+   
+![Table data snapshot](https://github.com/rogue-one/aiman/blob/master/images/tables.png)
+
+![Output file snapshot](https://github.com/rogue-one/aiman/blob/master/images/output.png)
+   
+   
+      
