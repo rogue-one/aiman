@@ -13,7 +13,8 @@ class TableConfig:
     TGT_RELATION = 'tgt-relation'
     KEYS = 'keys'
 
-    def __init__(self, config: dict):
+    def __init__(self, name: str, config: dict):
+        self.name = name
         self.src_relation: str = config[TableConfig.SRC_RELATION]
         self.tgt_relation: str = config[TableConfig.TGT_RELATION]
         self.keys: List[str] = config[TableConfig.KEYS]
@@ -71,4 +72,4 @@ class ConfigParser:
         :param src_table:
         :return:
         """
-        return TableConfig(self._config[ConfigParser.TABLE_CONFIG][src_table])
+        return TableConfig(src_table, self._config[ConfigParser.TABLE_CONFIG][src_table])

@@ -10,12 +10,18 @@ class CursorWrapper:
     a generator that wraps around the cursor and closes it once all data has been exhausted by the consumer.
     """
 
-    def __init__(self, cursor):
+    def __init__(self, cursor, max_rows: int):
         self._cursor = cursor
+        self.max_rows: int = max_rows
 
     def __iter__(self):
+        x: int = 0
         for row in self._cursor:
-            yield row
+            if x >= self.max_rows:
+                break
+            else:
+                x += 1
+                yield row
         try:
             self._cursor.close()
         except _:
@@ -57,10 +63,10 @@ class DBManager:
         cursor.execute(query)
         return RelationFields(keys, [x.name for x in cursor.description])
 
-    def query(self, sql) -> CursorWrapper:
+    def query(self, sql: str, max_rows: int) -> CursorWrapper:
         cursor = self._conn.cursor()
         cursor.execute(sql)
-        return CursorWrapper(cursor)
+        return CursorWrapper(cursor, max_rows)
 
     def shutdown(self):
         try:
@@ -89,7 +95,7 @@ class QueryBuilder:
             FULL OUTER JOIN 
             ({tgt_table}) {tgt_a} 
             ON {join_cond} 
-            WHERE NOT ({where_condition})
+            WHERE ({where_condition})
             """.format(cols=self._projection(src_a, tgt_a), src_table=self.table_config.src_relation, src_a=src_a,
                        tgt_table=self.table_config.tgt_relation, tgt_a=tgt_a,
                        join_cond=self._join_condition(src_a, tgt_a),
@@ -101,8 +107,9 @@ class QueryBuilder:
         return ' AND '.join(data)
 
     def _where_condition(self, src_a, tgt_a) -> str:
-        data = ["{src_a}.{col} = {tgt_a}.{col}".format(src_a=src_a, tgt_a=tgt_a, col=x) for x in self.fields.columns]
-        return ' AND '.join(data)
+        cond1 = ["{src_a}.{col} = {tgt_a}.{col}".format(src_a=src_a, tgt_a=tgt_a, col=x) for x in self.fields.columns]
+        cond2 = [' {als}.{col} IS NULL '.format(als=y, col=x) for x in self.fields.keys for y in [src_a, tgt_a]]
+        return 'NOT ({cond1}) OR {cond2}'.format(cond1=' AND '.join(cond1), cond2=' OR '.join(cond2))
 
     def _projection(self, src_a, tgt_a) -> str:
         key = ['CASE WHEN {s}.{x} IS NULL THEN {t}.{x} ELSE {s}.{x} END as {x}'.format(s=src_a, t=tgt_a, x=x) for

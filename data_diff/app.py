@@ -1,7 +1,8 @@
-
 from os import path
 from typing import List
+
 import jinja2
+
 from .config import ConfigParser, AppConfig, TableConfig
 from .db import DBManager, QueryBuilder, RelationFields
 
@@ -13,13 +14,20 @@ class RowData:
         self.headers: RelationFields = headers
 
     def add(self, row: tuple):
-        self.data.append(row)
+        filter(lambda x: x[0] < len(self.headers.keys), row)
+        key_data = [x for (idx, x) in enumerate(row) if idx < len(self.headers.keys)]
+        col_data = [x for (idx, x) in enumerate(row) if idx >= len(self.headers.keys)]
+        data = (key_data, zip(*(iter(col_data),) * 2))
+        self.data.append(data)
 
 
 class Report:
     TEMPLATE_FILE = 'template.html'
 
-    def __init__(self, row_data: RowData):
+    def __init__(self,
+                 report_name: str,
+                 row_data: RowData):
+        self.report_name = report_name
         self.row_data = row_data
 
     def _load_template(self):
@@ -29,7 +37,8 @@ class Report:
 
     def render(self) -> str:
         template = self._load_template()
-        return template.render(keys=self.row_data.headers.keys,
+        return template.render(report=self.report_name,
+                               keys=self.row_data.headers.keys,
                                cols=self.row_data.headers.columns,
                                data=self.row_data.data)
 
@@ -50,15 +59,15 @@ class App:
     def run(self):
         columns = self.db_manager.sql_field_names(self.table_config.src_relation, self.table_config.keys)
         sql = QueryBuilder(self.table_config, columns).build('t0', 't1')
-        cur = self.db_manager.query(sql)
+        cur = self.db_manager.query(sql, self.app_config.max_rows)
         row_data = RowData(columns)
         for x in cur:
             row_data.add(x)
-        report = Report(row_data)
+        report = Report(self.table_config.name, row_data)
         with open(self.output_file, 'w') as f:
             f.write(report.render())
 
     def _fetch_columns(self):
-        columns = self.db_manager.sql_field_names(self.table_config.src_relation)
+        columns = self.db_manager.sql_field_names(self.table_config.src_relation, self.table_config.keys)
         for x in self.table_config.keys:
             assert x in columns, 'key column %s not found in the relation' % x

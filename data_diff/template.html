@@ -1,15 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         * {
             box-sizing: border-box;
         }
-
         #myInput {
-            background-image: url('/css/searchicon.png');
             background-position: 10px 10px;
             background-repeat: no-repeat;
             width: 100%;
@@ -20,29 +17,40 @@
         }
 
         #myTable {
+            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
             border-collapse: collapse;
             width: 100%;
-            border: 1px solid #ddd;
-            font-size: 18px;
         }
 
-        #myTable th, #myTable td {
+        #myTable td, #myTable th {
+            border: 2px solid #000;
+            padding: 8px;
             text-align: center;
-            padding: 12px;
         }
 
-        #myTable tr {
-            border-bottom: 1px solid #ddd;
+        #myTable tr:nth-child(even){
+            background-color: #f2f2f2;
         }
 
-        #myTable tr.header, #myTable tr:hover {
-            background-color: #f1f1f1;
+        #myTable tr:hover {
+            background-color: #ddd;
+        }
+
+        .data-issue {
+            background-color: red;
+        }
+
+        .table-header  {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            background-color: #4CAF50;
+            color: white;
         }
     </style>
 </head>
 <body>
 
-<h2>My Customers</h2>
+<h2>{{report}}</h2>
 
 <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search values.." title="Type in a name">
 
@@ -55,22 +63,31 @@
     {% endfor %}
     <tr class="header">
         {% for name in keys -%}
-        <td rowspan="2">{{name}}</td>
+        <td rowspan="2" class="table-header">{{name}}</td>
         {% endfor %}
         {% for name in cols -%}
-        <th colspan="2" scope="colgroup" align="centre">{{name}}</th>
+        <th colspan="2" scope="colgroup" class="table-header">{{name}}</th>
         {% endfor %}
     </tr>
     <tr class="header">
         {% for name in cols -%}
-        <th scope="col">src</th>
-        <th scope="col">tgt</th>
+        <th scope="col" class="table-header">src</th>
+        <th scope="col" class="table-header">tgt</th>
         {% endfor %}
     </tr>
     {% for row in data -%}
     <tr class="content">
-        {% for cell in row -%}
+        {% for cell in row[0] -%}
         <td>{{cell}}</td>
+        {% endfor %}
+        {% for cell in row[1] -%}
+            {% if cell[0] == cell[1] %}
+                <td>{{cell[0]}}</td>
+                <td>{{cell[1]}}</td>
+            {% else %}
+                <td class="data-issue">{{cell[0]}}</td>
+                <td class="data-issue">{{cell[1]}}</td>
+            {% endif %}
         {% endfor %}
     </tr>
     {% endfor %}
@@ -89,16 +106,21 @@
     }
 
     function myFunction() {
-        $(".content").display = "none";
         let input, filter, table, tr, td, i, txtValue;
         input = document.getElementById("myInput");
         filter = input.value.toUpperCase();
         table = document.getElementById("myTable");
         tr = table.getElementsByTagName("tr");
+        hideAllRow(tr);
         for (i = 2; i < tr.length; i++) {
             for (x of tr[i].getElementsByTagName("td")) {
                 compare(x, tr[i], filter)
             }
+        }
+    }
+    function hideAllRow(tr) {
+        for (i = 2; i < tr.length; i++) {
+            tr[i].style.display ="none";
         }
     }
 </script>
