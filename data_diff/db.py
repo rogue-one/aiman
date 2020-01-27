@@ -2,7 +2,7 @@ from typing import List
 
 import psycopg2
 
-from config import DBConfig, TableConfig
+from .config import DBConfig, TableConfig
 
 
 class CursorWrapper:
@@ -22,6 +22,19 @@ class CursorWrapper:
             pass
 
 
+class RelationFields:
+
+    def __init__(self, keys: List[str], columns: List[str]):
+        self.keys: List[str] = keys
+        self.columns: List[str] = [x for x in columns if x not in keys]
+        self._validate(columns)
+
+    @staticmethod
+    def _validate(columns):
+        for x in columns:
+            assert x in columns, 'key column %s not found in the relation' % x
+
+
 class DBManager:
 
     def __init__(self, db_config: DBConfig):
@@ -38,11 +51,11 @@ class DBManager:
             database=conf.default_db
         )
 
-    def sql_field_names(self, sql: str) -> List[str]:
+    def sql_field_names(self, sql: str, keys: List[str]) -> RelationFields:
         query: str = "SELECT * FROM (%s) t0 WHERE 1 = 0" % sql
         cursor = self._conn.cursor()
         cursor.execute(query)
-        return [x.name for x in cursor.description]
+        return RelationFields(keys, [x.name for x in cursor.description])
 
     def query(self, sql) -> CursorWrapper:
         cursor = self._conn.cursor()
@@ -63,9 +76,9 @@ class QueryBuilder:
 
     def __init__(self,
                  table_config: TableConfig,
-                 columns: List[str]):
+                 fields: RelationFields):
         self.table_config = table_config
-        self.columns = columns
+        self.fields = fields
 
     def build(self, src_a, tgt_a) -> str:
         return \
@@ -84,14 +97,15 @@ class QueryBuilder:
 
     def _join_condition(self, src_a, tgt_a) -> str:
         data = ['{src_a}.{col} = {tgt_a}.{col}'.format(src_a=src_a, tgt_a=tgt_a, col=x)
-                for x in self.table_config.join_cols]
+                for x in self.fields.keys]
         return ' AND '.join(data)
 
     def _where_condition(self, src_a, tgt_a) -> str:
-        cols = [y for y in self.columns if y not in self.table_config.join_cols]
-        data = ["{src_a}.{col} = {tgt_a}.{col}".format(src_a=src_a, tgt_a=tgt_a, col=x) for x in cols]
+        data = ["{src_a}.{col} = {tgt_a}.{col}".format(src_a=src_a, tgt_a=tgt_a, col=x) for x in self.fields.columns]
         return ' AND '.join(data)
 
     def _projection(self, src_a, tgt_a) -> str:
-        data = ['{als}.{col}'.format(als=y, col=x) for x in self.columns for y in [src_a, tgt_a]]
-        return ','.join(data)
+        key = ['CASE WHEN {s}.{x} IS NULL THEN {t}.{x} ELSE {s}.{x} END as {x}'.format(s=src_a, t=tgt_a, x=x) for
+                    x in self.fields.keys]
+        rest = ['{als}.{col}'.format(als=y, col=x) for x in self.fields.columns for y in [src_a, tgt_a]]
+        return ','.join(key + rest)

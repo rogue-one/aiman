@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from typing import List
 
 import yaml
 
@@ -10,12 +11,12 @@ class TableConfig:
 
     SRC_RELATION = 'src-relation'
     TGT_RELATION = 'tgt-relation'
-    JOIN_CONDITION = 'join-cond'
+    KEYS = 'keys'
 
     def __init__(self, config: dict):
         self.src_relation: str = config[TableConfig.SRC_RELATION]
         self.tgt_relation: str = config[TableConfig.TGT_RELATION]
-        self.join_cols: list = config[TableConfig.JOIN_CONDITION]
+        self.keys: List[str] = config[TableConfig.KEYS]
 
 
 class DBConfig:

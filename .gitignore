@@ -2,3 +2,5 @@ Datadiff.iml
 venv/
 .idea/
 *.pyc
+.eggs
+build/

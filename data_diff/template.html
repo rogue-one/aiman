@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         * {
@@ -26,7 +27,7 @@
         }
 
         #myTable th, #myTable td {
-            text-align: left;
+            text-align: center;
             padding: 12px;
         }
 
@@ -43,16 +44,31 @@
 
 <h2>My Customers</h2>
 
-<input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names.." title="Type in a name">
+<input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search values.." title="Type in a name">
 
 <table id="myTable">
+    {% for name in keys -%}
+    <col>
+    {% endfor %}
+    {% for name in cols -%}
+    <colgroup span="2"></colgroup>
+    {% endfor %}
     <tr class="header">
-        {% for name in header -%}
-        <th style="width:60%;">{{name}}</th>
+        {% for name in keys -%}
+        <td rowspan="2">{{name}}</td>
+        {% endfor %}
+        {% for name in cols -%}
+        <th colspan="2" scope="colgroup" align="centre">{{name}}</th>
+        {% endfor %}
+    </tr>
+    <tr class="header">
+        {% for name in cols -%}
+        <th scope="col">src</th>
+        <th scope="col">tgt</th>
         {% endfor %}
     </tr>
     {% for row in data -%}
-    <tr>
+    <tr class="content">
         {% for cell in row -%}
         <td>{{cell}}</td>
         {% endfor %}
@@ -66,21 +82,20 @@
         let txtValue;
         if (td) {
             txtValue = td.textContent || td.innerText;
-            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            if (txtValue.toLowerCase().indexOf(filter.toLowerCase()) > -1) {
                 tr.style.display = "";
-            } else {
-                tr.style.display = "none";
             }
         }
     }
 
     function myFunction() {
+        $(".content").display = "none";
         let input, filter, table, tr, td, i, txtValue;
         input = document.getElementById("myInput");
         filter = input.value.toUpperCase();
         table = document.getElementById("myTable");
         tr = table.getElementsByTagName("tr");
-        for (i = 1; i < tr.length; i++) {
+        for (i = 2; i < tr.length; i++) {
             for (x of tr[i].getElementsByTagName("td")) {
                 compare(x, tr[i], filter)
             }

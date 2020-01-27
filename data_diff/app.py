@@ -1,15 +1,16 @@
-from typing import List
 
-import jinja2
-from config import ConfigParser, AppConfig, TableConfig
-from db import DBManager, QueryBuilder
 from os import path
+from typing import List
+import jinja2
+from .config import ConfigParser, AppConfig, TableConfig
+from .db import DBManager, QueryBuilder, RelationFields
+
 
 class RowData:
 
-    def __init__(self, headers: List[str]):
+    def __init__(self, headers: RelationFields):
         self.data: List[tuple] = []
-        self.headers: List[str] = headers
+        self.headers: RelationFields = headers
 
     def add(self, row: tuple):
         self.data.append(row)
@@ -28,7 +29,9 @@ class Report:
 
     def render(self) -> str:
         template = self._load_template()
-        return template.render(header=self.row_data.headers, data=self.row_data.data)
+        return template.render(keys=self.row_data.headers.keys,
+                               cols=self.row_data.headers.columns,
+                               data=self.row_data.data)
 
 
 class App:
@@ -45,7 +48,7 @@ class App:
         self.db_manager = DBManager(self.app_config.db_config)
 
     def run(self):
-        columns = self.db_manager.sql_field_names(self.table_config.src_relation)
+        columns = self.db_manager.sql_field_names(self.table_config.src_relation, self.table_config.keys)
         sql = QueryBuilder(self.table_config, columns).build('t0', 't1')
         cur = self.db_manager.query(sql)
         row_data = RowData(columns)
@@ -54,3 +57,8 @@ class App:
         report = Report(row_data)
         with open(self.output_file, 'w') as f:
             f.write(report.render())
+
+    def _fetch_columns(self):
+        columns = self.db_manager.sql_field_names(self.table_config.src_relation)
+        for x in self.table_config.keys:
+            assert x in columns, 'key column %s not found in the relation' % x
