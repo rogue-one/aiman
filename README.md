@@ -44,6 +44,27 @@
    same number of column with same labels. Then you should define the key fields which will be used to join these two
    relations.
    
+#### sample execution
+
+```
+(venv) chlr@C02YJ30SJG5H Aiman (master) $ python -m data_diff.main -c config.conf -t test_table_1 -o output.html
+
+            ====================================================================================================
+            
+            SELECT CASE WHEN t0.id IS NULL THEN t1.id ELSE t0.id END as id,CASE WHEN t0.name IS NULL THEN t1.name ELSE t0.name END as name,t0.address,t1.address,t0.killcount,t1.killcount 
+            FROM 
+            (SELECT * FROM test_table_1) t0 
+            FULL OUTER JOIN 
+            (SELECT * FROM test_table_2) t1 
+            ON t0.id = t1.id AND t0.name = t1.name 
+            WHERE (NOT (t0.address = t1.address AND t0.killcount = t1.killcount) OR  t0.id IS NULL  OR  t1.id IS NULL  OR  t0.name IS NULL  OR  t1.name IS NULL )
+            
+            ====================================================================================================
+            
+(venv) chlr@C02YJ30SJG5H Aiman (master) $ 
+
+```
+   
 ![Table data snapshot](https://github.com/rogue-one/aiman/blob/master/images/tables.png)
 
 ![Output file snapshot](https://github.com/rogue-one/aiman/blob/master/images/output.png)
