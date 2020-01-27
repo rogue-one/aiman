@@ -37,11 +37,19 @@ class RelationFields:
 
     @staticmethod
     def _validate(columns):
+        """
+        validate if all key fields are part of the source or target relation.
+        :param columns:
+        :return:
+        """
         for x in columns:
             assert x in columns, 'key column %s not found in the relation' % x
 
 
 class DBManager:
+    """
+    Interfaces with Database and provides helper methods to talk to the database.
+    """
 
     def __init__(self, db_config: DBConfig):
         self.db_config: DBConfig = db_config
@@ -49,6 +57,11 @@ class DBManager:
 
     @staticmethod
     def _create_connection(conf: DBConfig):
+        """
+        a static method that creates a single connection to the database.
+        :param conf:
+        :return:
+        """
         return psycopg2.connect(
             host=conf.hostname,
             user=conf.username,
@@ -58,17 +71,33 @@ class DBManager:
         )
 
     def sql_field_names(self, sql: str, keys: List[str]) -> RelationFields:
+        """
+        fetches field names from sql.
+        :param sql:
+        :param keys:
+        :return:
+        """
         query: str = "SELECT * FROM (%s) t0 WHERE 1 = 0" % sql
         cursor = self._conn.cursor()
         cursor.execute(query)
         return RelationFields(keys, [x.name for x in cursor.description])
 
     def query(self, sql: str, max_rows: int) -> CursorWrapper:
+        """
+        executes sql query
+        :param sql:
+        :param max_rows: maximum no of rows to fetch from sql result.
+        :return:
+        """
         cursor = self._conn.cursor()
         cursor.execute(sql)
         return CursorWrapper(cursor, max_rows)
 
     def shutdown(self):
+        """
+        closes connection to the database.
+        :return:
+        """
         try:
             self._conn.close()
         except _:
@@ -87,6 +116,14 @@ class QueryBuilder:
         self.fields = fields
 
     def build(self, src_a, tgt_a) -> str:
+        """
+        builds a query that joins source relation and table relation.
+        both source relation and target relation should have identical schema. i.e. column names and types must match
+        exactly.
+        :param src_a:
+        :param tgt_a:
+        :return:
+        """
         return \
             """
             SELECT {cols} 
@@ -102,16 +139,34 @@ class QueryBuilder:
                        where_condition=self._where_condition(src_a, tgt_a))
 
     def _join_condition(self, src_a, tgt_a) -> str:
+        """
+        composes join condition of the sql query
+        :param src_a:
+        :param tgt_a:
+        :return:
+        """
         data = ['{src_a}.{col} = {tgt_a}.{col}'.format(src_a=src_a, tgt_a=tgt_a, col=x)
                 for x in self.fields.keys]
         return ' AND '.join(data)
 
     def _where_condition(self, src_a, tgt_a) -> str:
+        """
+        composes where condition of the sql query
+        :param src_a:
+        :param tgt_a:
+        :return:
+        """
         cond1 = ["{src_a}.{col} = {tgt_a}.{col}".format(src_a=src_a, tgt_a=tgt_a, col=x) for x in self.fields.columns]
         cond2 = [' {als}.{col} IS NULL '.format(als=y, col=x) for x in self.fields.keys for y in [src_a, tgt_a]]
         return 'NOT ({cond1}) OR {cond2}'.format(cond1=' AND '.join(cond1), cond2=' OR '.join(cond2))
 
     def _projection(self, src_a, tgt_a) -> str:
+        """
+        composes projection of the sql query.
+        :param src_a:
+        :param tgt_a:
+        :return:
+        """
         key = ['CASE WHEN {s}.{x} IS NULL THEN {t}.{x} ELSE {s}.{x} END as {x}'.format(s=src_a, t=tgt_a, x=x) for
                     x in self.fields.keys]
         rest = ['{als}.{col}'.format(als=y, col=x) for x in self.fields.columns for y in [src_a, tgt_a]]

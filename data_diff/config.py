@@ -68,7 +68,7 @@ class ConfigParser:
 
     def relation(self, src_table: str) -> TableConfig:
         """
-
+        fetch table config
         :param src_table:
         :return:
         """
